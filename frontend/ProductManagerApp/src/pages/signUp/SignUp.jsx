@@ -1,27 +1,26 @@
-
 import Navbar from "../../components/Navbar/Navbar";
 import Input from "../../components/input/Input";
 import PasswordInput from "../../components/input/PasswordInput";
-import Button from "../../components/Button/Button"
+import Button from "../../components/Button/Button";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { validateEmail } from "../../utils/helper";
-import axiosInstance from "../../utils/axiosInstance"
+import axiosInstance from "../../utils/axiosInstance";
 
 const SignUp = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
- 
-  const Navigate = useNavigate()
+
+  const Navigate = useNavigate();
 
   const handleSignUp = async (e) => {
     e.preventDefault();
-     
+
     if (!name) {
       setError("Please Enter A Name!");
-      return
+      return;
     }
 
     if (!validateEmail(email)) {
@@ -30,32 +29,35 @@ const SignUp = () => {
     }
     if (!password) {
       setError("please Enter a Password!");
-      return
+      return;
     }
-    
+
     setError("");
-    //Sign Up API
-    try{
-      const response = await axiosInstance.post("/register" ,{
-        email : email,
-        password : password,
-        fullName : name
-      })
-      //Handle succefull Registration
-      if(response.data && response.data.error){
-        setError(response.data.message)
-        return
+
+    try {
+      const response = await axiosInstance.post("/register", {
+        email: email,
+        password: password,
+        fullName: name,
+      });
+
+      if (response.data && response.data.error) {
+        setError(response.data.message);
+        return;
       }
-      if(response.data && response.data.accessToken){
-        localStorage.setItem("token"  ,response.data.accessToken)
-        Navigate("/dashboard")
+      if (response.data && response.data.accessToken) {
+        localStorage.setItem("token", response.data.accessToken);
+        Navigate("/dashboard");
       }
-    }catch(error){
-      //Handle registration error
-      if(error.response && error.response.data && error.response.data.message){
-        setError(error.response.data.message)
-      }else{
-        setError("unExpected error occcured please try again.")
+    } catch (error) {
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        setError(error.response.data.message);
+      } else {
+        setError("unExpected error occcured please try again.");
       }
     }
   };

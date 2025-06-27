@@ -11,46 +11,43 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
 
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    if(!validateEmail(email)){
-      setError('please enter valid email address.')
-      return
+    if (!validateEmail(email)) {
+      setError("please enter valid email address.");
+      return;
     }
 
-    if(!password){
-      setError("please enter the password!")
-      return
+    if (!password) {
+      setError("please enter the password!");
+      return;
     }
-    setError("")
-    //Login API Call
-     
-    try{
-      const response = await axiosInstance.post("/login" ,{
-        email : email,
-        password : password
+    setError("");
 
-      })
-      //Handle succefful login response
-      if(response.data && response.data.accessToken){
-        localStorage.setItem("token" , response.data.accessToken)
-        navigate("/dashboard")
+    try {
+      const response = await axiosInstance.post("/login", {
+        email: email,
+        password: password,
+      });
+
+      if (response.data && response.data.accessToken) {
+        localStorage.setItem("token", response.data.accessToken);
+        navigate("/dashboard");
       }
-
-    }catch(error){
-      //Handle login error
-      if(error.response && error.response.data && error.response.data.message){
-        setError(error.response.response.data.message)
-
-      }else{
-        setError("Un Expected Error occured.please try again.")
+    } catch (error) {
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        setError(error.response.response.data.message);
+      } else {
+        setError("Un Expected Error occured.please try again.");
       }
-
     }
-
   };
 
   return (

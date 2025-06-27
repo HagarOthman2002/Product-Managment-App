@@ -5,11 +5,11 @@ import { MdAdd } from "react-icons/md";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Modal from "react-modal";
-import moment from "moment";
 import axiosInstance from "../../utils/axiosInstance";
 import ToastMessage from "../../components/ToastMessage/ToastMessage";
 import EmptyCard from "../../components/Cards/EmptyCard";
 import addProduct from "../../assets/images/npProducts.webp";
+import socket from "../../socket";
 
 function Home() {
   const [openAddEditModal, setOpenAddEditModal] = useState({
@@ -23,7 +23,7 @@ function Home() {
     message: "",
     type: "add",
   });
-
+  const [searchQuery, setSearchQuery] = useState("");
   const [allProducts, setAllProducts] = useState([]);
   const [userInfo, setUserInfo] = useState(null);
   const navigate = useNavigate();
@@ -62,12 +62,15 @@ function Home() {
 
   const getAllProducts = async () => {
     try {
-      const response = await axiosInstance.get("/products");
+      const response = await axiosInstance.get("/products", {
+        params: searchQuery.trim() ? { search: searchQuery } : {},
+      });
+
       if (response.data && response.data.products) {
         setAllProducts(response.data.products);
       }
     } catch (error) {
-      console.log("an unexpected error occured. please try again.");
+      console.log("an unexpected error occurred. please try again.");
     }
   };
 
@@ -89,12 +92,43 @@ function Home() {
   useEffect(() => {
     getAllProducts();
     getUserInfo();
-    return () => {};
-  }, []);
-const BASE_IMAGE_URL = "http://localhost:8000/uploads/";
+
+    socket.on("productAdded", (newProduct) => {
+      setAllProducts((prev) => [...prev, newProduct]);
+    });
+
+    socket.on("productUpdated", (updatedProduct) => {
+      setAllProducts((prev) =>
+        prev.map((prod) =>
+          prod._id === updatedProduct._id ? updatedProduct : prod
+        )
+      );
+    });
+
+    socket.on("productDeleted", ({ id }) => {
+      setAllProducts((prev) => prev.filter((prod) => prod._id !== id));
+    });
+
+    return () => {
+      socket.off("productAdded");
+      socket.off("productUpdated");
+      socket.off("productDeleted");
+    };
+  }, [searchQuery]);
+
+  const BASE_IMAGE_URL = "http://localhost:8000/uploads/";
   return (
     <>
-      <Navbar userInfo={userInfo} />
+      <Navbar
+        userInfo={userInfo}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        handleSearch={getAllProducts}
+        onClearSearch={() => {
+          setSearchQuery("");
+          getAllProducts();
+        }}
+      />
       <div className="container mx-auto px-4">
         {allProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
@@ -103,7 +137,6 @@ const BASE_IMAGE_URL = "http://localhost:8000/uploads/";
                 key={item._id}
                 imageUrl={item.img ? `${BASE_IMAGE_URL}${item.img}` : null}
                 name={item.name}
-             
                 description={item.description}
                 price={item.price}
                 category={item.category}
@@ -111,9 +144,7 @@ const BASE_IMAGE_URL = "http://localhost:8000/uploads/";
                 onEdit={() => handleEdit(item)}
                 onDelete={() => deleteProduct(item)}
               />
-              
             ))}
-            
           </div>
         ) : (
           <EmptyCard

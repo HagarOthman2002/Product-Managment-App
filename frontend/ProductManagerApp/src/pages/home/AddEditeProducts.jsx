@@ -11,50 +11,48 @@ const AddEditeProduct = ({
   showToastMessage,
 }) => {
   const [name, setName] = useState(productData?.name || "");
-  const [description, setDescription] = useState(productData?.description || "");
+  const [description, setDescription] = useState(
+    productData?.description || ""
+  );
   const [price, setPrice] = useState(productData?.price || "");
   const [category, setCategory] = useState(productData?.category || "");
   const [inStock, setInStock] = useState(productData?.inStock ?? true);
   const [img, setImg] = useState(productData?.img || []);
   const [error, setError] = useState(null);
-  
 
+  const addNewProduct = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("description", description);
+      formData.append("price", price);
+      formData.append("category", category);
+      formData.append("inStock", inStock);
+      if (img) {
+        formData.append("image", img);
+      }
 
-const addNewProduct = async () => {
-  try {
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("description", description);
-    formData.append("price", price);
-    formData.append("category", category);
-    formData.append("inStock", inStock);
-    if (img) {
-      formData.append("image", img);
+      const response = await axiosInstance.post("/products", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.data && response.data.product) {
+        showToastMessage("Product added successfully");
+        getAllProducts();
+        onClose();
+      }
+    } catch (error) {
+      console.error("Add error:", error);
+      if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else {
+        setError("An unexpected error occurred.");
+      }
     }
+  };
 
-    const response = await axiosInstance.post("/products", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-
-    if (response.data && response.data.product) {
-      showToastMessage("Product added successfully");
-      getAllProducts();
-      onClose();
-    }
-  } catch (error) {
-    console.error("Add error:", error);
-    if (error.response?.data?.message) {
-      setError(error.response.data.message);
-    } else {
-      setError("An unexpected error occurred.");
-    }
-  }
-};
-
-
-  // Edit Product
   const editeProduct = async () => {
     const productId = productData?._id;
     if (!productId) {
@@ -69,7 +67,6 @@ const addNewProduct = async () => {
         price,
         category,
         inStock,
-   
       });
 
       if (response.data && response.data.product) {
@@ -109,7 +106,6 @@ const addNewProduct = async () => {
         <MdClose className="text-xl text-slate-400" />
       </button>
 
-      {/* Product Name */}
       <div className="flex flex-col gap-2">
         <label className="input-label">Product Name</label>
         <input
@@ -121,7 +117,6 @@ const addNewProduct = async () => {
         />
       </div>
 
-      {/* Description */}
       <div className="flex flex-col gap-2 mt-4">
         <label className="input-label">Description</label>
         <textarea
@@ -133,7 +128,6 @@ const addNewProduct = async () => {
         />
       </div>
 
-      {/* Price */}
       <div className="flex flex-col gap-2 mt-4">
         <label className="input-label">Price (EGP)</label>
         <input
@@ -145,7 +139,6 @@ const addNewProduct = async () => {
         />
       </div>
 
-      {/* Category */}
       <div className="flex flex-col gap-2 mt-4">
         <label className="input-label">Category</label>
         <input
@@ -157,29 +150,24 @@ const addNewProduct = async () => {
         />
       </div>
 
-      {/* In Stock */}
       <div className="flex items-center gap-2 mt-4">
         <input
           type="checkbox"
           id="inStock"
           checked={inStock}
-          onChange={e => setInStock(e.target.checked)}
+          onChange={(e) => setInStock(e.target.checked)}
         />
         <label htmlFor="inStock" className="text-sm">
           In Stock
         </label>
       </div>
 
-      {/* Tags */}
       <div className="mt-4">
-
         <ImageInput image={img} setImage={setImg} />
       </div>
 
-      {/* Error Message */}
       {error && <p className="text-red-500 text-xs pt-4">{error}</p>}
 
-      {/* Submit Button */}
       <button
         className="w-full bg-blue-600 text-white cursor-pointer font-medium mt-5 p-3 hover:bg-blue-700"
         onClick={handleAddProduct}

@@ -34,6 +34,8 @@ exports.addProduct = async (req, res) => {
       userId: user.id,
     });
     await product.save();
+    const io = req.app.get("io");
+    io.emit("productAdded", product);
     return res.json({
       error: false,
       product,
@@ -52,7 +54,6 @@ exports.editeProduct = async (req, res) => {
   const { name, description, price, category, inStock } = req.body;
   const user = req.user;
 
-  // At least one field must be provided
   if (name === undefined && description === undefined && price === undefined && category === undefined && inStock === undefined) {
     return res.status(400).json({ error: true, message: "No changes provided" });
   }
@@ -71,6 +72,8 @@ exports.editeProduct = async (req, res) => {
     if (req.file) product.img = req.file.filename;
 
     await product.save();
+    const io = req.app.get("io")
+    io.emit("productUpdated" , product)
     return res.json({ error: false, product, message: "Product updated successfully" });
   } catch (error) {
     console.error("Edit Product Error:", error);
@@ -80,14 +83,25 @@ exports.editeProduct = async (req, res) => {
 
 exports.getAllProducts = async (req, res) => {
   const user = req.user;
+  const { search } = req.query;
+
   try {
-    const products = await Product.find({ userId: user._id }).sort({
-      price: -1,
-    });
+    const query = { userId: user._id };
+
+    if (search && search.trim() !== "") {
+      const searchRegex = new RegExp(search, "i");
+      query.$or = [
+        { name: searchRegex },
+        { category: searchRegex }
+      ];
+    }
+
+    const products = await Product.find(query).sort({ price: -1 });
+
     return res.json({
       error: false,
       products,
-      message: "All products retrieved successfully",
+      message: "Products retrieved successfully",
     });
   } catch (error) {
     return res.status(500).json({
@@ -96,6 +110,7 @@ exports.getAllProducts = async (req, res) => {
     });
   }
 };
+
 
 exports.deleteProduct = async (req, res) => {
   const productId = req.params.id;
@@ -112,6 +127,8 @@ exports.deleteProduct = async (req, res) => {
       });
     }
     await Product.deleteOne({ _id: productId, userId: user._id });
+    const io = req.app.get('io')
+    io.emit("productDeleted", {id:productId})
     return res.json({
       error: false,
       message: "Product deleted successfuly",
